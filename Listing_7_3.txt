@@ -1,0 +1,68 @@
+	.global	_start	@ Program starting address for linker
+
+@	Macro "disp sub,tail" calls a subroutine, then displays a character.
+@		sub:	Subroutine to be called 
+@		tail:	Separation character to be output
+
+	.macro	disp	sub,tail
+	bl	\sub	@ Call desired subroutine.
+	push	{R1}	@ Save value that is in R1.
+	ldr	R1,=\tail @ Separation character.
+	bl	v_asc1	@ Display single character.
+	pop	{R1}	@ Restore original value in R1.
+	.endm
+
+@	Macro "dispbs base,tail" calls v_dig1, then displays a character.
+@		base:	Base (2 - 16) in which to display number 
+@		tail:	Separation character to be output
+
+	.macro	dispbs	base,tail
+	push	{R0,R1}	@ Save values from R0 and R1.
+	mov	R0,#\base @ Load base for display.
+	bl	v_dig1	@ Display number in base ...
+	ldr	R1,=\tail @ Separation character.
+	bl	v_asc1	@ Display single character.
+	pop	{R0,R1}	@ Restore original values.
+	.endm
+
+@	Display prompt message.
+
+_start:	ldr	R1,=prompt @ Load pointer to message.
+	mov	R2,#27	@ Number of characters in message
+	mov	R0,#1	@ Stdout: Standard output (usually monitor)
+	mov	R7,#4	@ Linux command code to write
+ 	svc	0	@ Call Linux command.
+
+@	Read input line from user keyboard or redirected file.
+
+	ldr	R1,=msg @ Memory address to receive input
+	mov	R0,#0	@ Stdin: Standard input (usually keyboard)
+	mov	R7,#3	@ Linux command code to read
+	mov	R2,#20	@ Maximum length to receive
+	svc	0	@ Issue command to read.
+
+@	Echo line just input back to the user one character at a time.
+
+	mov	R5,R0	@ Save a copy to test for exit.
+inloop:	disp	v_bin1,tab @ Display next character in binary.
+	disp	v_hex1,tab @ Display next character in hex.
+	dispbs	10,tab	@ Display next character in decimal.
+	disp	v_asc1,newln @ Display next character and line feed.
+	add	R1,#1	@ Set address to next character in buffer.
+	subs	R0,#1	@ Decrement number of characters remaining.
+	bgt	inloop	@ Continue loop until message complete.
+
+@	Go get another line, but exit if only "Enter" key was input.
+
+	cmp	R5,#1	@ Test if only the line feed character.
+	bgt	_start	@ Loop back around to get another input.
+	mov	R7,#1	@ Command 1 terminates programs.
+	mov	R0,#0	@ Set exit code to zero.
+	svc	0	@ Return full control to Linux.
+
+	.data
+msg:	.ds	10	@ Memory buffer for keyboard input
+prompt:	.ascii	"Please enter text message: "
+newln:	.ascii	"\n"	@ Line feed character code
+tab:	.ascii	"\t"	@ Horizontal tab character code
+	.end

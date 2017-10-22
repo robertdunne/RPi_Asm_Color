@@ -1,0 +1,19 @@
+	.global	_start	@ Program starting address for linker
+
+@	Program to display Hello World.
+
+_start:	ldr	R1,=msg @ Load pointer to message.
+	mov	R2,#12	@ Number of characters in message
+	mov	R0,#1	@ Code for stdout (usually the monitor)
+	mov	R7,#4	@ Linux service command code to write
+	svc	0	@ Call Linux command.
+
+@	Exit and return full control back to Linux.
+
+	mov	R7,#1	@ Command 1 terminates programs.
+	mov	R0,#0	@ Set exit code to zero.
+	svc	0	@ Return full control to Linux.
+
+	.data		@ Begin "data" area of memory
+msg:	.ascii	"Hello World\n" @ ASCII string to display
+	.end

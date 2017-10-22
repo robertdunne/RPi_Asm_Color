@@ -1,0 +1,16 @@
+@	Subroutine v_asc1 will display one character from memory buffer.
+@		R1: Points to character in memory
+@		LR: Contains the return address
+@		SP: Stack pointer
+@		All register contents will be preserved.
+
+	.global	v_asc1	@ Externalize the subroutine entry point.
+
+v_asc1:	push	{R0,R2,R7} @ Save contents of register to be used.
+	mov	R0,#1	@ Code for stdout (usually the monitor)
+	mov	R7,#4	@ Linux service command code to write
+	mov	R2,#1	@ Display one character at a time.
+	svc	0	@ Display next one  character of message.
+	pop	{R0,R2,R7} @ Restore saved register contents.
+	bx	LR	@ Return to the calling program.
+	.end

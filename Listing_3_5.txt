@@ -1,0 +1,46 @@
+	.global	_start	@ Program starting address for linker
+
+@	Display prompt message.
+
+_start:	ldr	R1,=prompt @ Load pointer to message.
+	mov	R2,#27	@ Number of characters in message
+	mov	R0,#1	@ Stdout: Standard output (usually monitor)
+	mov	R7,#4	@ Linux command code to write
+ 	svc	0	@ Call Linux command.
+
+@	Read input line from user keyboard or redirected file.
+
+	ldr	R1,=msg @ Memory address to receive input
+	mov	R0,#0	@ Stdin: Standard input (usually keyboard)
+	mov	R7,#3	@ Linux command code to read
+	mov	R2,#20	@ Maximum length to receive
+	svc	0	@ Issue command to read.
+
+@	Echo line just input back to the user one character at a time.
+
+	mov	R4,R0	@ Number of characters input in message
+	mov	R5,R0	@ Save a copy to test for exit.
+	mov	R0,#1	@ Code for stdout (usually the monitor)
+	mov	R7,#4	@ Linux service command code to write
+	mov	R2,#1	@ Display one character at a time.
+inloop:	svc	0	@ Display next one character of message.
+	add	R3,R1,#1 @ Save address of next byte to be displayed.
+	ldr	R1,=newln @ Line feed character skips to new line.
+	svc	0	@ Put each input character on a separate line.
+	mov	R1,R3	@ Restore pointer to message being displayed.
+	subs	R4,#1	@ Decrement number of characters remaining.
+	bgt	inloop	@ Continue loop until message complete.
+
+@	Go get another line, but exit if only "Enter" key was input.
+
+	cmp	R5,#1	@ Test if only the line feed character.
+	bgt	_start	@ Loop back around to get another input.
+	mov	R7,#1	@ Command 1 terminates programs.
+	mov	R0,#0	@ Set exit code to zero.
+	svc	0	@ Return full control to Linux.
+
+	.data
+msg:	.ds	10	@ Memory buffer for keyboard input
+prompt:	.ascii	"Please enter text message: "
+newln:	.ascii	"\n"	@ Line feed character code
+	.end

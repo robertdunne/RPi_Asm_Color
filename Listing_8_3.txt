@@ -1,0 +1,47 @@
+	.global	_start	@ Program starting address for linker
+
+@	Macro "dispbs base,tail" calls v_dig1, then displays a character.
+@		base:	Base (2 - 16) in which to display number 
+@		tail:	Separation character to be output
+
+	.macro	dispbs	base,tail
+	push	{R0,R1}	@ Save values from R0 and R1.
+	mov	R0,#\base @ Load base for display.
+	bl	v_dig1	@ Display number in base ...
+	ldr	R1,=\tail @ Separation character.
+	bl	v_asc1	@ Display single character.
+	pop	{R0,R1}	@ Restore original values.
+	.endm
+
+@	Initialize 64-bit NEON register D1 with eight 8-bit integers.
+
+_start:	mov	R5,#4	@ Number of loops of eight 8-bit additions.
+	ldr	R1,=intlst @ Pointer to list of integers.
+	vldm	R1,{D1}	@ Load eight 8-bit integers into D1.
+
+@	Loop to display array of eight 8-bit numbers in decimal.
+
+addlp:	ldr	R1,=sumlst @ Pointer to first 8-bit number.
+	vstm	R1,{D1}	@ Store 64 bits in 8 bytes.
+	mov	R6,#7	@ Number of elements in array - 1
+dloop:	dispbs	10,tab	@ Display next byte in decimal.
+	add	R1,#1	@ Point to next byte to display.
+	subs	R6,#1	@ Number of bytes remaining.
+	bgt	dloop	@ Continue loop until message complete.
+	dispbs	10,newln @ Display last byte in decimal.
+	vadd.u8	D1,D1,D1 @ Double each 8-bit integer in D1.
+
+@	Continue the loop until all passes done.
+
+	subs	R5,#1	@ Decrement number of passes remaining.
+	bgt	addlp	@ Go perform another pass through loop.
+	mov	R7,#1	@ Command 1 terminates programs.
+	mov	R0,#0	@ Set exit code to zero.
+	svc	0	@ Return full control to Linux.
+
+	.data
+intlst:	.byte	1,2,10,50,100,150,200,250
+sumlst:	.ds	4	@ Reserve 8 bytes of memory,
+newln:	.ascii	"\n"	@ Line feed character code
+tab:	.ascii	"\t"	@ Horizontal tab character code
+	.end

@@ -1,0 +1,62 @@
+	.global	_start	@ Program starting address for linker
+
+@	Display prompt message	
+
+_start:	ldr	R1,=prompt @ Load pointer to message.
+	mov	R2,#27	@ Number of characters in message
+	mov	R0,#1	@ Stdout: Standard output (usually monitor)
+	mov	R7,#4	@ Linux command code to write
+ 	svc	0	@ Call Linux command.
+
+@	Read input line from user keyboard or redirected file.
+
+	ldr	R1,=msg @ Memory address to receive input
+	mov	R0,#0	@ Stdin: Standard input (usually keyboard)
+	mov	R7,#3	@ Linux command code to read
+	mov	R2,#30	@ Maximum length to receive
+	svc	0	@ Issue command to read.
+
+@	Echo line just input back to the user.
+
+	mov	R2,R0	@ Number of characters input
+	mov	R0,#1	@ Code for stdout (usually the monitor)
+	mov	R7,#4	@ Linux service command code to write
+	svc	0	@ Call Linux command.
+
+@	Change case of first 16 lettters and echo again
+
+	ldr	R6,=cvt		@ Load pointer to 0x20202020
+@	ldr	R12,[R6]	@ Load 32-bit pattern into R12
+	vldm	R6,{Q1}		@ Load 128 bit conversion pattern.
+@	ldmia	R1,{R8-R11}	@ Load first 16 characters input
+	vldm	R1,{Q0}		@ Load first 4 characters input
+@	eor	R8,R8,R12	@ "Flip" the case of 4 letters.
+@	eor	R9,R9,R12	@ "Flip" the case of 4 letters.
+@	eor	R10,R10,R12	@ "Flip" the case of 4 letters.
+@	eor	R11,R11,R12	@ "Flip" the case of 4 letters.
+	veor	Q0,Q0,Q1	@ Flip case on 16 letters.
+@	stmia	R1,{R8-R11}	@ Overlay with changed case letters.
+	vstm	R1,{Q0}		@ Overlay with changed case letters.
+	mov	R0,#1		@ [R0] = stdout (R1, R2, R7 still OK)
+	svc	0		@ Call Linux command to display again.
+
+@	Convert to lower case and echo again
+
+	vorr	Q0,Q0,Q1	@ Convert 16 letters to lower case.
+	vstm	R1,{Q0}		@ Overlay with lower case letters.
+	mov	R0,#1		@ [R0] = stdout (R1, R2, R7 still OK)
+	svc	0		@ Call Linux command to display again.
+
+@	Go get another line, but exit if only "Enter" key input.
+
+	cmp	R2,#1	@ Test if only the line feed character.
+	bgt	_start	@ Loop back around to get another input.
+	mov	R7,#1	@ Command 1 terminates programs.
+	mov	R0,#0	@ Set exit code to zero.
+	svc	0	@ Return full control to Linux.
+
+	.data
+cvt:	.word	0x20202020,0x20202020,0x20202020,0x20202020
+msg:	.ds	15	@ Memory buffer for keyboard input
+prompt:	.ascii	"Please enter text message: "
+	.end

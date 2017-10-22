@@ -1,0 +1,51 @@
+@	Subroutine v_dig1 displays one byte in a selected base.
+@		R0: Contains the base (2 through 16)
+@		R1: Points to byte in memory
+@		LR: Contains the return address
+@		All register contents will be preserved.
+
+	.global	v_dig1		@ Externalize the entry address.
+
+v_dig1:	push	{R1-R5,LR}	@ Save registers R1 to R5, LR.
+	ldrb	R3,[R1]		@ Load byte to be displayed.
+	cmp	R3,R0		@ Only one's column is needed?
+	blt	onecol		@ Go output "only" column of display.
+
+@	Build power table for base: X**0, X**1, X**2, ...
+
+	ldr	R4,=power	@ Point to power table in memory.
+	mov	R2,R0		@ Copy the base to begin with X**1.
+initb:	strb	R2,[R4,#1]!	@ Store next power of base.
+	mul	R2,R0		@ Calculate next power of base.
+	cmp	R2,R3		@ Check if reached power-of-base needed.
+	ble	initb		@ Continue until enough digits reached.
+
+@	Loop back through power table and output digit for each column.
+
+nxtdig:	ldr	R1,=dig-1	@ Point to 1 "0123456789ABCDEF" string
+	ldrb	R5,[R4],#-1	@ Load next lower power (i.e., column) 
+
+@	Calculate next digit to be displayed.
+
+modX:	add	R1,#1		@ Set R1 pointing to next higher digit.
+	subs	R3,R5		@ Count down to find the correct digit.
+	bge	modX		@ Keep subtracting current column value.
+	addlt	R3,R5		@ We counted one too many (went negative)
+	bl	v_asc1		@ R1 points to 1 ASCII character to display.
+	cmp	R5,R0		@ Test if all the way to the one's column.
+	bgt	nxtdig		@ If 1's column, go output it.
+
+@	Finish multi-digit display by calculating the one's digit.
+
+onecol:	ldr	R1,=dig		@ Pointer to "0123456789"
+	add	R1,R3		@ Generate offset into "0123456789".
+	bl	v_asc1		@ Display one's column digit.
+	pop	{R1-R5,LR}	@ Restore saved register contents
+	bx	LR		@ Return to the calling program
+
+	.data
+power:	.byte	1		@ Any non-zero number to the zeroth power.
+	.ds	5		@ Reserve space for powers of base
+dig:	.ascii	"0123456789"	@ ASCII string of digits 0 through 9
+	.ascii	"ABCDEF"	@ ASCII string of digits A through F
+	.end

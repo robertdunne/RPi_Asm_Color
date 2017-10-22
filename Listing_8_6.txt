@@ -1,0 +1,33 @@
+	.global	_start		@ Starting address for linker
+_start: ldr	R1,=A2X		@ Memory buffer for output from NEON.
+	vldm	R1,{D0-D2}	@ Load "AB...WX" into 3 64-bit registers.
+	ldr	R1,=result	@ Memory buffer for "interleaved" output.
+	vstm	R1,{D0-D2}	@ Save exact copy for display.
+	mov	R2,#25		@ Length of buffer including line feed
+	mov	R0,#1		@ Stdout: Standard output (monitor)
+	mov	R7,#4		@ Linux command code to write
+ 	svc	0		@ Display exact copy from VLDM/VSTM.
+
+@	Show interleaved store using vst1.8, vst3.8, vst3.16, and vst3.32
+	
+	vst1.8	{D0-D2},[R1]	@ Save as 1 "element" of 8 bits each	
+	mov	R0,#1		@ Reset to Stdout: (changed by SVC call)
+ 	svc	0		@ Display exact copy from VLDM/VSTM.
+	vst3.8	{D0-D2},[R1]	@ Save as 3 "elements" of 8 bits each
+	mov	R0,#1		@ Reset to Stdout: (changed by SVC call)
+ 	svc	0		@ Display exact copy from VLDM/VSTM.
+	vst3.16	{D0-D2},[R1]	@ Save as 3 "elements" of 16 bits each
+	mov	R0,#1		@ Reset to Stdout: (changed by SVC call)
+ 	svc	0		@ Display exact copy from VLDM/VSTM.
+	vst3.32	{D0-D2},[R1]	@ Save as 3 "elements" of 32 bits each
+	mov	R0,#1		@ Reset to Stdout: (changed by SVC call)
+ 	svc	0		@ Display exact copy from VLDM/VSTM.
+
+	mov	R0,#0		@ Status 0 indicates "normal completion"
+	mov	R7,#1		@ Service command terminates this program.
+	svc	0		@ Issue Linux command to stop program.
+	.data
+A2X:	.ascii	"ABCDEFGHIJKLMNOPQRSTUVWX" @ 24 bytes
+result:	.ds	12		@ Reserve room for "interleaved" store.
+	.ascii	"\n"		@ Line feed
+	.end

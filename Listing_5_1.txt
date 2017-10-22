@@ -1,0 +1,27 @@
+@	Subroutine v_bin1 displays one byte from memory in binary.
+@		R1: Points to byte in memory
+@		LR: Contains the return address
+@		All register contents will be preserved.
+
+	.global	v_bin1		@ Externalize the entry address.
+
+v_bin1:	push	{R0-R6,LR}	@ Save registers R0 through R6, LR.
+	ldrb	R3,[R1]		@ Load byte to be displayed.
+	ldr	R5,=dig		@ Pointer to "01" ASCII string
+	mov	R6,#7		@ Bit 7 will be output first.
+
+@	Loop through each bit outputing it to the standard output display.
+
+nxtbit:	mov	R1,R3		@ Copy byte to be displayed to R1.
+	lsr	R1,R6		@ Shift current bit to bit 0.
+	and	R1,#1		@ Mask off all bits except bit 0.
+	add	R1,R5		@ Set R1 pointing to "0" or "1"
+	bl	v_asc1		@ Display "0" or "1".
+	subs	R6,#1		@ Decrement number of bits to display
+	bge	nxtbit		@ Go display next bit until all 8 displayed
+
+	pop	{R0-R6,LR}	@ Restore saved register contents
+	bx	LR		@ Return to the calling program
+
+dig:	.ascii	"01"		@ ASCII string of binary digits 0 and 1
+	.end

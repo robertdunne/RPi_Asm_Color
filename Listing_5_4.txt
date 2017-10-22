@@ -1,0 +1,28 @@
+@	Subroutine v_hex1 displays one byte in hexadecimal.
+@		R1: Points to byte in memory
+@		LR: Contains the return address
+@		All register contents will be preserved.
+
+	.global	v_hex1		@ Externalize the entry address.
+
+v_hex1:	push	{R0-R6,LR}	@ Save registers R0 through R6, LR.
+	ldrb	R3,[R1]		@ Load byte to be displayed.
+	ldr	R5,=dig		@ Pointer to "0123456789ABCDEF" ASCII string
+	mov	R6,#4		@ Bit 4 will be output first.
+
+@	Loop through groups of 4-bit nibbles and output each to stdout.
+
+nxthex:	mov	R1,R3		@ Copy byte to be displayed to R1.
+	lsr	R1,R6		@ Select next hex digit (0 .. F).
+	and	R1,#0b1111	@ Mask off all bits except lower 4.
+	add	R1,R5		@ Set R1 pointing to "0", "1", ... or "F"
+	bl	v_asc1		@ Display 1 hexadecimal digit "0", ...
+	subs	R6,#4		@ Decrement number of bits to display
+	bge	nxthex		@ Go display next nibble
+
+	pop	{R0-R6,LR}	@ Restore saved register contents
+	bx	LR		@ Return to the calling program
+
+dig:	.ascii	"0123456789"	@ ASCII string of digits 0 through 9
+	.ascii	"ABCDEF"	@ ASCII string of digits A through F
+	.end
