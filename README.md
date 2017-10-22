@@ -21,10 +21,11 @@ The ls and cat commands are useful to list the contents of the
 directory and the copied model.s source code, respectively.
 
 ~$ ls RPi_Asm_Color
+
 ~$ cat model.s
 
 Warning: The assembler source code that appears in this book and is available for
-download is for learning to program in assembly language. Some of these subroutines are
-incomplete and even contain problems that need to be corrected in exercises at the end of
-the labs. No guarantee of their commercial utility is expressed or implied.
+download is for learning to program in assembly language. Some of these programs are
+incomplete and even contain problems that need to be altered. 
+No guarantee of their commercial utility is expressed or implied.
 
